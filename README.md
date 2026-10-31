@@ -7,4 +7,5 @@ dotnet build
 dotnet test
 ```
 
-See [docs/architecture.md](docs/architecture.md) and [docs/adr](docs/adr).
+See [docs/architecture.md](docs/architecture.md) and [docs/adr](docs/adr). Learning progress is
+tracked in [docs/progress.md](docs/progress.md).
