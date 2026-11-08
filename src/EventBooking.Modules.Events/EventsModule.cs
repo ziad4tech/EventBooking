@@ -1,3 +1,6 @@
+using EventBooking.Modules.Events.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventBooking.Modules.Events;
@@ -8,6 +11,19 @@ public static class EventsModule
 
     public static IServiceCollection AddEventsModule(this IServiceCollection services)
     {
+        services.AddDbContext<EventsDbContext>((serviceProvider, options) =>
+            options.UseNpgsql(
+                serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("EventBooking"),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema)));
+
         return services;
+    }
+
+    public static async Task ApplyEventsMigrationsAsync(this IServiceProvider services)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        await dbContext.Database.MigrateAsync();
     }
 }
