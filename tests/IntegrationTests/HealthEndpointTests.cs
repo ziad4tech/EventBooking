@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EventBooking.IntegrationTests;
@@ -8,7 +9,9 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClas
     [Fact]
     public async Task Health_returns_ok()
     {
-        var client = factory.CreateClient();
+        var client = factory
+            .WithWebHostBuilder(builder => builder.UseEnvironment("Testing"))
+            .CreateClient();
 
         var response = await client.GetAsync("/health");
 
