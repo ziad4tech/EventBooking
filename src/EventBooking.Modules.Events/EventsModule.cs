@@ -25,6 +25,7 @@ public static class EventsModule
     public static IEndpointRouteBuilder MapEventsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost("/events", EventEndpoints.CreateEventAsync);
+        endpoints.MapGet("/events/{id:guid}", EventEndpoints.GetEventByIdAsync);
 
         return endpoints;
     }

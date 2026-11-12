@@ -8,6 +8,7 @@ internal sealed record EventResponse(
     DateTime StartsAtUtc,
     int Capacity,
     int SeatsTaken,
+    int AvailableSeats,
     decimal Price,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);

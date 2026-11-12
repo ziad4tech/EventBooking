@@ -1,5 +1,6 @@
 using EventBooking.Modules.Events.Persistence;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventBooking.Modules.Events.Endpoints;
 
@@ -24,6 +25,20 @@ internal static class EventEndpoints
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/events/{newEvent.Id}", ToResponse(newEvent));
+    }
+
+    internal static async Task<IResult> GetEventByIdAsync(
+        Guid id,
+        EventsDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var found = await dbContext.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+        return found is null
+            ? Results.Problem(statusCode: 404, title: "Event not found", detail: $"No event with id {id}.")
+            : Results.Ok(ToResponse(found));
     }
 
     // Key: the field name. Value: every problem with that field. An empty dictionary means the request is valid.
@@ -131,7 +146,7 @@ internal static class EventEndpoints
         return newEvent;
     }
 
-    private static EventResponse ToResponse(Event source) => new(
+    internal static EventResponse ToResponse(Event source) => new(
         source.Id,
         source.Name,
         source.Description,
@@ -139,6 +154,7 @@ internal static class EventEndpoints
         source.StartsAtUtc,
         source.Capacity,
         source.SeatsTaken,
+        AvailableSeats: source.Capacity - source.SeatsTaken,
         source.Price,
         source.CreatedAtUtc,
         source.UpdatedAtUtc);
