@@ -26,6 +26,8 @@ app.UseHttpsRedirection();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+app.MapEventsEndpoints();
+
 app.Run();
 
 public partial class Program;
