@@ -26,6 +26,7 @@ public static class EventsModule
     {
         endpoints.MapPost("/events", EventEndpoints.CreateEventAsync);
         endpoints.MapGet("/events/{id:guid}", EventEndpoints.GetEventByIdAsync);
+        endpoints.MapPut("/events/{id:guid}", EventEndpoints.UpdateEventAsync);
 
         return endpoints;
     }

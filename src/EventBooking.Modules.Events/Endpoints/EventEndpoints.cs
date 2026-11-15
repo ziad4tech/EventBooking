@@ -37,9 +37,60 @@ internal static class EventEndpoints
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
         return found is null
-            ? Results.Problem(statusCode: 404, title: "Event not found", detail: $"No event with id {id}.")
+            ? EventNotFound(id)
             : Results.Ok(ToResponse(found));
     }
+
+    internal static async Task<IResult> UpdateEventAsync(
+        Guid id,
+        CreateEventRequest request,
+        EventsDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var errors = Validate(request);
+        if (errors.Count > 0)
+        {
+            return Results.ValidationProblem(errors);
+        }
+
+        var existing = await dbContext.Events
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+        if (existing is null)
+        {
+            return EventNotFound(id);
+        }
+
+        if (IsCapacityBelowSeatsTaken(existing, request))
+        {
+            return Results.Problem(statusCode: 409, title: "Capacity too low", detail: $"New capacity {request.Capacity} is below the number of seats already taken ({existing.SeatsTaken}).");
+        }
+
+        ApplyUpdate(existing, request);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(ToResponse(existing));
+    }
+
+    internal static bool IsCapacityBelowSeatsTaken(Event existing, CreateEventRequest request)
+    {
+        return request.Capacity!.Value < existing.SeatsTaken;
+    }
+
+    internal static void ApplyUpdate(Event target, CreateEventRequest request)
+    {
+        target.Name = request.Name!.Trim();
+        target.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        target.Venue = request.Venue!.Trim();
+        target.StartsAtUtc = request.StartsAtUtc!.Value;
+        target.Capacity = request.Capacity!.Value;
+        target.Price = request.Price!.Value;
+        target.UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    private static IResult EventNotFound(Guid id) =>
+        Results.Problem(statusCode: 404, title: "Event not found", detail: $"No event with id {id}.");
 
     // Key: the field name. Value: every problem with that field. An empty dictionary means the request is valid.
     internal static Dictionary<string, string[]> Validate(CreateEventRequest request)
@@ -134,7 +185,7 @@ internal static class EventEndpoints
         {
             Id = Guid.NewGuid(),
             Name = request.Name!.Trim(),
-            Description = string.IsNullOrWhiteSpace(request.Description?.Trim()) ? null : request.Description!.Trim(),
+            Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             Venue = request.Venue!.Trim(),
             StartsAtUtc = request.StartsAtUtc!.Value,
             Capacity = request.Capacity!.Value,
